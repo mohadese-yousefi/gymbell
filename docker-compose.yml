@@ -1,0 +1,35 @@
+services:
+  proxy:
+    image: traefik:v2.4.2
+    command:
+      # - "--log.level=DEBUG"
+      - "--api=true"
+      - "--api.dashboard=true"
+      - "--api.insecure=true" # Don't do that in production
+      - "--providers.docker"
+      - "--entrypoints.web.address=:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - 80:80
+      - 8080:8080
+
+  users:
+    build: ./users
+    labels: 
+      - "traefik.enable=true"
+      - "traefik.http.routers.users.rule=Host(`localhost`)"
+
+      #- "traefik.http.routers.users.rule=PathPrefix(`/api/users/`)"
+      - "traefik.http.services.users.loadbalancer.server.port=8079"
+    depends_on:
+      - proxy
+    ports:
+      - 8079:8079
+
+  db:
+    image: mongo:4.2.23
+    env_file:
+      - ./example.env
+    #volumes:
+    #  - database:/data/db
